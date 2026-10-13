@@ -1,0 +1,31 @@
+# Git metadata
+.git
+.gitignore
+.gitattributes
+
+# Maven / build output (rebuilt inside the image)
+target/
+.mvn/wrapper/maven-wrapper.jar
+
+# Local secrets - never ship these into the image
+.env
+.env.*
+!.env.example
+
+# Locally generated certificates (the bundled CA at
+# src/main/resources/certs/aiven-ca.pem IS kept and re-exported at startup)
+/certs/
+*.p12
+
+# Local dev / IDE artifacts
+*.log
+notes.txt
+loadtext.html
+HELP.md
+.idea/
+.vscode/
+*.iml
+
+# OS noise
+.DS_Store
+Thumbs.db
