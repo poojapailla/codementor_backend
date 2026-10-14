@@ -1,36 +1,22 @@
 package com.codementor.backend.testcase;
 
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.MediaType;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
+
+import com.codementor.backend.service.AiClient;
 
 @Service
 public class TestCaseService {
 
     private static final int MAX_CODE_LENGTH = 20000;
 
-    private final RestClient restClient;
+    private final AiClient aiClient;
 
-    public TestCaseService(
-            @Value("${ai.service.url}") String aiServiceUrl
-    ) {
-        SimpleClientHttpRequestFactory requestFactory =
-                new SimpleClientHttpRequestFactory();
-
-        requestFactory.setConnectTimeout(Duration.ofSeconds(5));
-        requestFactory.setReadTimeout(Duration.ofMinutes(10));
-
-        this.restClient = RestClient.builder()
-                .baseUrl(aiServiceUrl)
-                .requestFactory(requestFactory)
-                .build();
+    public TestCaseService(AiClient aiClient) {
+        this.aiClient = aiClient;
     }
 
     public TestCaseResponseDTO generateTestCases(
@@ -61,12 +47,11 @@ public class TestCaseService {
                         : request.getLanguage());
         aiRequest.put("problem_description", request.getProblemDescription());
 
-        Map<?, ?> response = restClient.post()
-                .uri("/generate-tests")
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(aiRequest)
-                .retrieve()
-                .body(Map.class);
+        Map<?, ?> response = aiClient.post(
+                "/generate-tests",
+                aiRequest,
+                Map.class
+        );
 
         if (response == null) {
             throw new IllegalStateException(

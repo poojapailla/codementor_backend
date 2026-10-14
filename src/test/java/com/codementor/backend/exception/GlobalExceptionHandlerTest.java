@@ -2,11 +2,14 @@ package com.codementor.backend.exception;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestClientResponseException;
 
 class GlobalExceptionHandlerTest {
 
@@ -65,6 +68,48 @@ class GlobalExceptionHandlerTest {
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR,
                 response.getStatusCode());
         assertEquals("An unexpected server error occurred",
+                response.getBody().get("message"));
+    }
+
+    @Test
+    void forwardsFastApiValidationDetailArray() {
+        String body = "{\"detail\":[{\"type\":\"string_too_long\","
+                + "\"loc\":[\"body\",\"code\"],"
+                + "\"msg\":\"String should have at most 20000 characters\","
+                + "\"input\":\"aaa\"}]}";
+
+        RestClientResponseException exception = new RestClientResponseException(
+                "422 Unprocessable Entity",
+                422,
+                "Unprocessable Entity",
+                new HttpHeaders(),
+                body.getBytes(StandardCharsets.UTF_8),
+                StandardCharsets.UTF_8);
+
+        ResponseEntity<Map<String, String>> response =
+                handler.handleRestClientError(exception);
+
+        assertEquals(422, response.getStatusCode().value());
+        assertEquals("String should have at most 20000 characters",
+                response.getBody().get("message"));
+    }
+
+    @Test
+    void forwardsPlainTextDetailFromStringBody() {
+        String body = "{\"detail\":\"Code and language are required.\"}";
+
+        RestClientResponseException exception = new RestClientResponseException(
+                "422 Unprocessable Entity",
+                422,
+                "Unprocessable Entity",
+                new HttpHeaders(),
+                body.getBytes(StandardCharsets.UTF_8),
+                StandardCharsets.UTF_8);
+
+        ResponseEntity<Map<String, String>> response =
+                handler.handleRestClientError(exception);
+
+        assertEquals("Code and language are required.",
                 response.getBody().get("message"));
     }
 }

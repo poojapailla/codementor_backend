@@ -1,32 +1,20 @@
 package com.codementor.backend.tutor;
 
-import java.time.Duration;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
+
+import com.codementor.backend.service.AiClient;
 
 import java.util.Map;
 
 @Service
 public class TutorService {
 
-    private final RestClient restClient;
+    private static final int MAX_CODE_LENGTH = 15000;
 
-    public TutorService(
-            @Value("${ai.service.url}") String aiServiceUrl
-    ) {
-        SimpleClientHttpRequestFactory requestFactory =
-                new SimpleClientHttpRequestFactory();
+    private final AiClient aiClient;
 
-        requestFactory.setConnectTimeout(Duration.ofSeconds(5));
-        requestFactory.setReadTimeout(Duration.ofMinutes(10));
-
-        this.restClient = RestClient.builder()
-                .baseUrl(aiServiceUrl)
-                .requestFactory(requestFactory)
-                .build();
+    public TutorService(AiClient aiClient) {
+        this.aiClient = aiClient;
     }
 
     public TutorResponseDTO teach(TutorRequestDTO request) {
@@ -36,10 +24,10 @@ public class TutorService {
             );
         }
 
-        if (request.getCode().length() > 15000) {
+        if (request.getCode().length() > MAX_CODE_LENGTH) {
             throw new IllegalArgumentException(
-                    "Please submit less than 15000 characters of code at once. "
-                    + "Split the program into a smaller section."
+                    "Please submit less than " + MAX_CODE_LENGTH + " characters "
+                    + "of code at once. Split the program into a smaller section."
             );
         }
 
@@ -71,14 +59,16 @@ public class TutorService {
                 "Teach the student clearly. Return concise, useful sections."
         );
 
-        Map<?, ?> response = restClient.post()
-                .uri("/review")
-                .body(aiRequest)
-                .retrieve()
-                .body(Map.class);
+        Map<?, ?> response = aiClient.post(
+                "/review",
+                aiRequest,
+                Map.class
+        );
 
         if (response == null) {
-            throw new IllegalStateException("The AI service returned an empty response.");
+            throw new IllegalStateException(
+                    "The AI service returned an empty response."
+            );
         }
 
         return new TutorResponseDTO(
