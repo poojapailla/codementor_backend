@@ -20,8 +20,12 @@ public class AiClient {
 
     private static final Logger log = LoggerFactory.getLogger(AiClient.class);
 
-    private static final int MAX_ATTEMPTS = 4;
-    private static final long BASE_BACKOFF_MILLIS = 1000L;
+    // A sleeping free-tier Render service can take ~50-60s to wake up, during
+    // which its edge returns gateway 502/503/504. The attempts below span
+    // roughly a minute so the waking service is given time to come online.
+    private static final int MAX_ATTEMPTS = 6;
+    private static final long BASE_BACKOFF_MILLIS = 3000L;
+    private static final long MAX_BACKOFF_MILLIS = 20000L;
 
     private final RestClient restClient;
 
@@ -70,8 +74,12 @@ public class AiClient {
     }
 
     private void backoff(int attempt) {
+        long delay = Math.min(
+                BASE_BACKOFF_MILLIS * (1L << (attempt - 1)),
+                MAX_BACKOFF_MILLIS
+        );
         try {
-            Thread.sleep(BASE_BACKOFF_MILLIS * attempt);
+            Thread.sleep(delay);
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
         }

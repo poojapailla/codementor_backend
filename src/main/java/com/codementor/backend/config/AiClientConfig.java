@@ -26,7 +26,7 @@ public class AiClientConfig {
         // Render free-tier services cold-start in roughly 30-60s. A generous
         // connect timeout lets the request wait for the first byte instead of
         // failing fast; the retry layer also re-tries platform 502/503/504s.
-        requestFactory.setConnectTimeout(Duration.ofSeconds(30));
+        requestFactory.setConnectTimeout(Duration.ofSeconds(60));
 
         // Local/free-tier inference is slow. Keep this above the AI service's
         // own request timeout so its clean 504 reaches us rather than a
